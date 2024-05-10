@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="/socket.io/socket.io.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>game room</title>
+  </head>
+  <body>
+    <style>
+      #message {
+        font-family: Helvetica, sans-serif;
+        margin-top: auto;
+        font-size: 2rem;
+        text-align: center;
+      }
+      body {
+        font-family: Helvetica, sans-serif;
+        text-align: center;
+        background-color: antiquewhite;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .container {
+        width: 80vh;
+        height: 90vh;
+        background-color: #9db4e2;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: 10px; /* Optional for rounded corners */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional for a shadow effect */
+        padding: 20px; /* Adjust as needed */
+      }
+      #restart-game {
+        background-color: #625454;
+        font-family: Helvetica, sans-serif;
+        border: none;
+        color: rgb(255, 255, 255);
+        padding: 10px 15px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        margin: 10px;
+        font-size: 16px;
+      }
+      #restart-game:hover {
+        background-color: #000000;
+        color: white;
+      }
+      #players-container {
+        display: flex;
+        justify-content: space-between;
+        align-self: center;
+        width: 90%;
+        padding: 0 5px;
+      }
+
+      .player {
+        font-size: 1rem;
+        text-align: center;
+      }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        width: 60vw;
+        max-width: 500px;
+        margin: auto;
+      }
+
+      .board button {
+        /* height: 10vw;
+        width: 10vw; */
+        width: 100%;
+        aspect-ratio: 1;
+        font-size: 5vw;
+		margin: auto;
+      }
+
+      .board button:hover {
+        background-color: #959494;
+        color: rgb(0, 0, 0);
+      }
+    </style>
+    <div class="container">
+      <div id="message">
+        Welcome to the game room, <b> <%= nickname %></b>! <br />
+        <p style="font-size: 10px">room id: <%= roomId %></p>
+      </div>
+
+      <div id="players-container">
+        <p id="player1" class="player" style="font-size: 20px">
+          <b>O</b>:
+          <b
+            ><span style="color: #3657c4" id="player1-nickname"
+              >Loading...</span
+            ></b
+          >
+        </p>
+        <div id="turn-status" style="font-size: 20px; margin: 50px 0"></div>
+        <p id="player2" class="player" style="font-size: 20px">
+          <b>X</b>:
+          <b
+            ><span style="color: #3657c4" id="player2-nickname"
+              >Waiting for player...</span
+            ></b
+          >
+        </p>
+      </div>
+      <div class="board">
+        <button id="0"></button> <button id="1"></button>
+        <button id="2"></button> <button id="3"></button>
+        <button id="4"></button> <button id="5"></button>
+        <button id="6"></button> <button id="7"></button>
+        <button id="8"></button>
+      </div>
+      <button id="restart-game">Restart Game</button>
+    </div>
+    <script>
+      var nickname = "<%= nickname %>";
+      var roomId = "<%= roomId %>";
+
+      function updateBoard(gameState) {
+        for (let i = 0; i < gameState.length; i++) {
+          let buttonId = `${i}`;
+          let button = document.getElementById(buttonId);
+
+          if (button) {
+            button.textContent = gameState[i];
+          }
+        }
+      }
+
+      window.addEventListener("load", function () {
+        var socket = io();
+        var id = socket.id;
+        var figure = "";
+        var isTurn = false;
+        var gameOn = false;
+        var gameOver = false;
+        var gameOverMessage = "";
+
+        socket.emit("updateUsersId", { nickname, id });
+
+        socket.emit("updateUserRoom", { nickname, roomId });
+
+        // socket.emit("updateRooms");
+
+        socket.emit("createRoom", {
+          roomId: roomId,
+          player1: nickname,
+          player2: undefined,
+        });
+
+        socket.emit("getFigure", { roomId: roomId, player: nickname });
+
+        socket.on("getFigureResult", (data) => {
+          figure = data;
+          console.log("GAME.EJS:", nickname, "figure is ", data);
+          if (data == "O") {
+            isTurn = true;
+          }
+        });
+
+        socket.emit("getPlayers", roomId);
+
+        socket.on("getPlayersResult", (data) => {
+          if (data.p1) {
+            document.getElementById("player1-nickname").textContent = data.p1;
+          }
+          if (data.p2) {
+            document.getElementById("player2-nickname").textContent = data.p2;
+          }
+        });
+
+        socket.on("gameOn", () => {
+          gameOn = true;
+        });
+
+        socket.on("gameOff", () => {
+          gameOn = false;
+        });
+
+        document
+          .querySelector(".board")
+          .addEventListener("click", function (event) {
+            if (event.target.tagName === "BUTTON") {
+              handleButtonClick(event.target);
+            }
+          });
+
+        function handleButtonClick(button) {
+          if (gameOn) {
+            if (button.textContent !== "") {
+              return;
+            }
+            if (isTurn) {
+              button.textContent = figure;
+              socket.emit("playerMove", {
+                roomId: roomId,
+                cellId: button.id,
+                figure: figure,
+                player: nickname,
+              });
+              isTurn = false;
+              updateTurnStatus(isTurn);
+            }
+          }
+        }
+
+        socket.on("updateGameBoard", (data) => {
+          updateBoard(data.gameState);
+          if (data.figure == figure) {
+            isTurn = true;
+          } else {
+            isTurn = false;
+          }
+          updateTurnStatus(isTurn);
+        });
+
+        function updateTurnStatus(isMyTurn) {
+          var turnStatusElement = document.getElementById("turn-status");
+          if (gameOver) {
+            turnStatusElement.textContent = gameOverMessage;
+          } else if (isMyTurn) {
+            turnStatusElement.textContent = "Your turn";
+          } else {
+            turnStatusElement.textContent = "Waiting for other player's turn";
+          }
+        }
+
+        socket.on("gameOver", (winner) => {
+          gameOver = true;
+		  gameOn = false;
+          if (winner) {
+            if (winner == figure) {
+              gameOverMessage = "GAME OVER: YOU WIN!";
+            } else {
+              gameOverMessage = "GAME OVER: YOU LOSE!";
+            }
+          } else {
+            gameOverMessage = "GAME OVER: IT'S A TIE!";
+          }
+          updateTurnStatus(isTurn);
+        });
+
+		socket.on("restartGameResponse", () => {
+			gameOver = false;
+			gameOn = true;
+			updateTurnStatus();
+		});
+
+        var startGameButton = document.getElementById("restart-game");
+        startGameButton.addEventListener("click", function () {
+          socket.emit("clearBoard", roomId);
+		  socket.emit("restartGame", roomId);
+
+          if (figure == "O") {
+            isTurn = true;
+          } else {
+            isTurn = false;
+          }
+        });
+      });
+
+      window.addEventListener("beforeunload", function (event) {
+        socket.emit("leaveRoom", { roomId: roomId, player: nickname });
+      });
+    </script>
+  </body>
+</html>

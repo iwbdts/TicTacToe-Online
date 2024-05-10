@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script src="/socket.io/socket.io.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>game rooms</title>
+    <style>
+      #message {
+        font-family: Helvetica, sans-serif;
+        margin-bottom: auto;
+        font-size: 2rem;
+        text-align: top;
+      }
+      #message2 {
+        font-family: Helvetica, sans-serif;
+        margin-bottom: auto;
+        font-size: 1rem;
+        text-align: top;
+      }
+      body {
+        font-family: Helvetica, sans-serif;
+        text-align: center;
+        background-color: antiquewhite;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        width: 80vh;
+        height: 90vh;
+        background-color: #9db4e2;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+      .room {
+        border: 2px solid #3657c4;
+        background-color: antiquewhite;
+        font-family: Helvetica, sans-serif;
+        text-align: left;
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .room:hover {
+        background-color: #c3c0c0;
+      }
+
+      #rooms-list {
+        font-family: Helvetica, sans-serif;
+        margin: auto;
+        /* margin-top: 10%; */
+        width: 90%;
+      }
+      #new-room {
+        background-color: #625454;
+        font-family: Helvetica, sans-serif;
+        border: none;
+        color: rgb(255, 255, 255);
+        padding: 10px 15px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        margin: 10px;
+        font-size: 16px;
+        margin-top: auto;
+        margin-bottom: auto;
+      }
+      #new-room:hover {
+        background-color: #000000;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="message">
+        Welcome to the rooms page,
+        <b> <span style="color: #0011ff"> <%= nickname %></span></b
+        >! <br />
+        <p style="font-size:15px">These are the available game rooms:</p>
+      </div>
+
+      <div id="rooms-list"></div>
+      <div>
+        <button id="new-room">New Room</button>
+      </div>
+    </div>
+
+    <script>
+      var nickname = "<%= nickname %>";
+      window.addEventListener("load", function () {
+        var socket = io();
+        var id = socket.id;
+        socket.emit("updateUsersId", { nickname, id });
+
+        function joinRoom(roomId) {
+          socket.emit("checkRoom", roomId); //!!!!
+        }
+
+        socket.on("updateRoomsList", function (rooms) {
+          var roomsListElement = document.getElementById("rooms-list");
+          roomsListElement.innerHTML = "";
+          Object.values(rooms).forEach(function (room, index) {
+            var roomElement = document.createElement("div");
+            roomElement.className = "room";
+
+            var roomTitle = document.createElement("div");
+            roomTitle.textContent = "Room " + (index + 1);
+            roomElement.appendChild(roomTitle);
+
+            var players = document.createElement("div");
+            players.textContent =
+              "Players: " +
+              room.player1 +
+              ", " +
+              (room.player2 || "Waiting...");
+            roomElement.appendChild(players);
+
+            roomElement.onclick = function () {
+              joinRoom(room.roomId);
+            };
+
+            roomsListElement.appendChild(roomElement);
+          });
+        });
+
+        socket.on("checkRoomResult", function (data) {
+          if (data.isFull) {
+            alert("This room is already full");
+          } else {
+            socket.emit("joinRoom", {
+              roomId: data.roomId,
+              player: nickname,
+            });
+            window.location.href =
+              "/game/" +
+              data.roomId +
+              "?nickname=" +
+              encodeURIComponent(nickname);
+          }
+        });
+
+        var newRoomButton = document.getElementById("new-room");
+        newRoomButton.addEventListener("click", function () {
+          window.location.href =
+            "/game/" + socket.id + "?nickname=" + encodeURIComponent(nickname);
+        });
+      });
+    </script>
+  </body>
+</html>
