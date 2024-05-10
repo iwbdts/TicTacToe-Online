@@ -9,5 +9,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+  },
+  "engines": {
+    "node": "18.x"
   }
+
 }
