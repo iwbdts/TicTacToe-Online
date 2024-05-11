@@ -1,4 +1,7 @@
-Run with node index.js
+Run with
+```bash
+node index.js
+```
 
 Go to http://localhost:3000/
 
