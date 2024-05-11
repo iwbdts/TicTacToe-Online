@@ -11,7 +11,7 @@ var rooms = {};
 var defaultGameState = ["", "", "", "", "", "", "", "", ""];
 
 // app.use(express.urlencoded({ extended: true }));
-const PORT = process.env.PORT || 3000;
+
 app.get("/", function (req, res) {
     res.render("index");
 });
@@ -65,7 +65,7 @@ function updateRooms() {
         }
     }
     io.emit("updateRoomsList", Object.values(rooms));
-    console.log("Updated rooms:", rooms);
+    // console.log("Updated rooms:", rooms);
 
 }
 
@@ -80,7 +80,7 @@ function checkWinner(gameState) {
         if (gameState[combo[0]] !== "" &&
             gameState[combo[0]] === gameState[combo[1]] &&
             gameState[combo[1]] === gameState[combo[2]]) {
-            console.log("The winner is ", gameState[combo[0]]);
+            // console.log("The winner is ", gameState[combo[0]]);
             return gameState[combo[0]];
         }
     }
@@ -123,7 +123,7 @@ io.on("connection", (socket) => {
             id: id,
             roomId: undefined,
         };
-        console.log("Setting nickname to", nickname);
+        // console.log("Setting nickname to", nickname);
         io.emit("updateUsers", Object.values(users));
     });
 
@@ -134,7 +134,7 @@ io.on("connection", (socket) => {
             id: id,
             roomId: undefined,
         };
-        console.log("User ", data.nickname, "id updated to ", id);
+        // console.log("User ", data.nickname, "id updated to ", id);
         io.emit("updateUsers", Object.values(users));
     });
 
@@ -152,11 +152,11 @@ io.on("connection", (socket) => {
         var player = data.player;
 
         if (rooms[roomId].player1 == player) {
-            console.log("User ", player, "'s figure is O");
+            // console.log("User ", player, "'s figure is O");
             socket.emit("getFigureResult", "O");
         }
         if (rooms[roomId].player2 == player) {
-            console.log("User ", player, "'s figure is X");
+            // console.log("User ", player, "'s figure is X");
             socket.emit("getFigureResult", "X");
         }
     });
@@ -173,7 +173,7 @@ io.on("connection", (socket) => {
                 p2 = "...";
                 rooms[roomId].gameState = defaultGameState.slice();
             }
-            console.log("Get players: ", p1, p2);
+            // console.log("Get players: ", p1, p2);
             io.to(roomId).emit("getPlayersResult", { p1: p1, p2: p2 });
         }
     });
@@ -199,7 +199,7 @@ io.on("connection", (socket) => {
                 users[p2].roomId = roomId;
             }
             updateRooms();
-            console.log("Creating a new room with player ", room.player1);
+            // console.log("Creating a new room with player ", room.player1);
         } else {
             // executed when joining existing room
             var p1 = rooms[roomId].player1;
@@ -210,14 +210,14 @@ io.on("connection", (socket) => {
         }
 
         socket.join(roomId);
-        console.log(findUserBySocketId(socket.id), "joined room ", gameRoom.roomId)
+        // console.log(findUserBySocketId(socket.id), "joined room ", gameRoom.roomId)
         rooms[roomId].gameState = defaultGameState.slice();
         io.to(roomId).emit("updateGameBoard", { gameState: rooms[roomId].gameState, figure: "O" });
     });
 
     socket.on("updateRooms", () => {
         // called in game.ejs
-        console.log("updating rooms...");
+        // console.log("updating rooms...");
         updateRooms();
     });
 
@@ -227,13 +227,13 @@ io.on("connection", (socket) => {
         if (rooms.hasOwnProperty(roomId)) {
             var room = rooms[roomId];
             if (room.player1 !== undefined && room.player2 !== undefined) {
-                console.log(
-                    "Both ",
-                    room.player1,
-                    " and ",
-                    room.player2,
-                    " are defined."
-                );
+                // console.log(
+                //     "Both ",
+                //     room.player1,
+                //     " and ",
+                //     room.player2,
+                //     " are defined."
+                // );
                 isFull = true;
             }
         }
@@ -246,17 +246,17 @@ io.on("connection", (socket) => {
 
         if (rooms[roomId]) {
             if (rooms[roomId].player1 && rooms[roomId].player2) {
-                console.log("Room ", roomId, "is full", player, "cannot join");
+                // console.log("Room ", roomId, "is full", player, "cannot join");
             } else {
                 rooms[roomId].player2 = player;
-                console.log(
-                    "Player",
-                    player,
-                    " joined room ",
-                    roomId,
-                    " now playing with ",
-                    rooms[roomId].player1
-                );
+                // console.log(
+                //     "Player",
+                //     player,
+                //     " joined room ",
+                //     roomId,
+                //     " now playing with ",
+                //     rooms[roomId].player1
+                // );
                 socket.join(roomId);
                 updateRooms();
                 rooms[roomId].gameState = defaultGameState.slice();
@@ -264,7 +264,7 @@ io.on("connection", (socket) => {
             }
 
         } else {
-            console.log("Room not found: ", roomId);
+            // console.log("Room not found: ", roomId);
         }
     });
 
@@ -274,27 +274,27 @@ io.on("connection", (socket) => {
         var figure = data.figure;
         var player = data.player;
         if (rooms.hasOwnProperty(roomId) && rooms[roomId].player1 !== undefined && rooms[roomId].player2 !== undefined) {
-            console.log("Player1 and 2 are defined here:", rooms[roomId]);
+            // console.log("Player1 and 2 are defined here:", rooms[roomId]);
             if (rooms[roomId].gameState[cellId] === "") {
                 rooms[roomId].gameState[cellId] = figure;
                 var nextFigure = figure === "X" ? "O" : "X";
-                console.log(player, "made move in room", roomId);
+                // console.log(player, "made move in room", roomId);
                 io.to(roomId).emit("updateGameBoard", { gameState: rooms[roomId].gameState, figure: nextFigure });
                 if (checkGameOver(rooms[roomId].gameState)) {
-                    console.log("EMITTING GAME OVER- WINNER IS", checkWinner(rooms[roomId].gameState));
+                    // console.log("EMITTING GAME OVER- WINNER IS", checkWinner(rooms[roomId].gameState));
                     io.to(roomId).emit("gameOver", (checkWinner(rooms[roomId].gameState)));
                 }
             } else {
-                console.log("Illegal move attempted in room", roomId);
+                // console.log("Illegal move attempted in room", roomId);
             }
 
         } else {
-            console.log("Room not found:", roomId);
+            // console.log("Room not found:", roomId);
         }
     });
 
     socket.on("clearBoard", (roomId) => {
-        console.log("restart game in room", roomId);
+        // console.log("restart game in room", roomId);
         if (rooms.hasOwnProperty(roomId)) {
             rooms[roomId].gameState = defaultGameState.slice();
             io.to(roomId).emit("updateGameBoard", { gameState: rooms[roomId].gameState, figure: "O" });
@@ -342,6 +342,6 @@ io.on("connection", (socket) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+server.listen(3000, () => {
+    console.log("Server is running on port 3000");
 });
