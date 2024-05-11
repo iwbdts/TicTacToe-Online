@@ -1,14 +1,17 @@
 {
-  "name": "nie-wiem-juz",
+  "name": "tic-tac-toe-game",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple multiplayer Tic Tac Toe game using Node.js, Express, and Socket.io",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon start"
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "http": "0.0.1-security",
+    "socket.io": "^4.0.0",
+    "ejs": "^3.1.6"
   },
   "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "nodemon": "^3.0.3"
-  }
+  "license": "ISC"
 }
