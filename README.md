@@ -9,7 +9,7 @@ Install project dependencies
 npm install
 ```
 
-Go to http://localhost:3000/
+Host addres, for example http://localhost:3000/
 
 Enter your nickname
 
