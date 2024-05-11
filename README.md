@@ -3,6 +3,12 @@ Run with
 node index.js
 ```
 
+Install project dependencies
+
+```
+npm install
+```
+
 Go to http://localhost:3000/
 
 Enter your nickname
